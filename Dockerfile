@@ -9,44 +9,42 @@ ARG DJANGO_SUPERUSER_USERNAME=admin
 ARG DJANGO_SUPERUSER_PASSWORD=admin
 ARG DJANGO_SUPERUSER_EMAIL=admin@admin.com
 
-# 3. Install system dependencies for psycopg2, Pillow, cryptography, etc.
+# 3. System‑Dependencies installieren
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
     libjpeg-dev \
     zlib1g-dev \
     libffi-dev \
-    netcat \
-    && rm -rf /var/lib/apt/lists/*
+    netcat-openbsd \
+  && rm -rf /var/lib/apt/lists/*
 
-# 4. Environment variables
+# 4. Environment‑Variablen (Runtime)
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     DOCKER_DB_HOST=db \
     DOCKER_DB_PORT=5432 \
     APP_PORT=${APP_PORT} \
-    DJANGO_SUPERUSER_USERNAME=admin \
-    DJANGO_SUPERUSER_PASSWORD=admin \
-    DJANGO_SUPERUSER_EMAIL=admin@admin.com
+    DJANGO_SUPERUSER_USERNAME=${DJANGO_SUPERUSER_USERNAME} \
+    DJANGO_SUPERUSER_PASSWORD=${DJANGO_SUPERUSER_PASSWORD} \
+    DJANGO_SUPERUSER_EMAIL=${DJANGO_SUPERUSER_EMAIL}
 
-# 5. Working directory
+# 5. Arbeitsverzeichnis setzen
 WORKDIR /app
 
-# 6. Install Python dependencies
-COPY requirements.txt .
+# 6. Python‑Dependencies installieren
+COPY requirements.txt . 
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 7. Copy application code
+# 7. Applikationscode kopieren
 COPY . .
 
-# 8. Copy entrypoint.sh from local context
-COPY entrypoint.sh ./entrypoint.sh
+# 8. Entrypoint‑Skript kopieren und ausführbar machen
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
-# 9. Make entrypoint executable
-RUN chmod x ./entrypoint.sh
-
-# 10. Expose application port
+# 9. Port freigeben
 EXPOSE ${APP_PORT}
 
-# 11. Use entrypoint
+# 10. Entrypoint definieren
 ENTRYPOINT ["./entrypoint.sh"]
