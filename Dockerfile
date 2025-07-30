@@ -1,7 +1,7 @@
 # Dockerfile
 
 # 1. Base Image
-FROM python:3.9-alpine
+FROM python:3.9-slim
 
 # 2. Build‑Time Defaults
 ARG APP_PORT=8020
