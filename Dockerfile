@@ -10,14 +10,14 @@ ARG DJANGO_SUPERUSER_PASSWORD=admin
 ARG DJANGO_SUPERUSER_EMAIL=admin@admin.com
 
 # 3. Install system dependencies for psycopg2, Pillow, cryptography, etc.
-RUN apk update && apk add --no-cache \
-    build-base \
-    musl-dev \
-    postgresql-dev \
-    jpeg-dev \
-    zlib-dev \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    libjpeg-dev \
+    zlib1g-dev \
     libffi-dev \
-    python3-dev
+    netcat \
+    && rm -rf /var/lib/apt/lists/*
 
 # 4. Environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -43,7 +43,7 @@ COPY . .
 COPY entrypoint.sh ./entrypoint.sh
 
 # 9. Make entrypoint executable
-RUN chmod +x ./entrypoint.sh
+RUN chmod x ./entrypoint.sh
 
 # 10. Expose application port
 EXPOSE ${APP_PORT}
