@@ -10,10 +10,13 @@
 </div>
 
 ## Table of Contents
-* [Description](#description)
-* [Installation](#installation)
-* [Screenshots of the Django Backend Admin Panel](#screenshots)
-* [Useful Links](#useful_links)
+* [Description](#description)  
+* [Quickstart](#quickstart)  
+* [How to build the image](#how-to-build-the-image)  
+* [Usage](#usage)  
+* [Installation](#installation) 
+* [Screenshots](#screenshots)  
+* [Useful Links](#useful-links)
 
 
 
@@ -43,18 +46,18 @@ Most of the views are CBV imported from _rest_framework.generics_, and they allo
 
 The behavior of some of the views had to be modified to address functionalities such as creation of order and payment, as in this case, for example, both functionalities are implemented in the same view, and so a _GenericAPIView_ was the view from which it inherits. Another example of this is the _UploadCustomerImage_ View that takes the vinyl template uploaded by the clients and creates a new product based on it.
 
-## Installation
+## Quickstart
 
 1. Clone the repo:
     ```bash
-    git clone <INSERT URL>
+    git clone https://github.com/A1eksD/Trucker-Signs-App
     ```
 1. Configure a virtual env and set up the database. See [Link for configuring Virtual Environment](https://docs.python-guide.org/dev/virtualenvs/) and [Link for Database setup](https://www.digitalocean.com/community/tutorials/how-to-set-up-django-with-postgres-nginx-and-gunicorn-on-ubuntu-16-04).
 1. Configure the environment variables.
     1. Copy the content of the example env file that is inside the truck_signs_designs folder into a .env file:
         ```bash
         cd truck_signs_designs/settings
-        cp simple_env_config.env .env
+        cp .env .env
         ```
     1. The new .env file should contain all the environment variables necessary to run all the django app in all the environments. However, the only needed variables for the development environment to run are the following:
         ```bash
@@ -71,11 +74,11 @@ The behavior of some of the views had to be modified to address functionalities 
         ```
     1. For the database, the default configurations should be:
         ```bash
-        DB_NAME=trucksigns_db
-        DB_USER=trucksigns_user
-        DB_PASSWORD=supertrucksignsuser!
-        DB_HOST=localhost
-        DB_PORT=5432
+        DB_NAME=${TRUCKSIGNS_DB}
+        DB_USER=${TRUCKSIGNS_USER}
+        DB_PASSWORD=${TRUCKSIGNS_PW}
+        DB_HOST=${TRUCKSIGNS_HOST}
+        DB_PORT=${TRUCKSIGNS_PORT}
         ```
     1. The SECRET_KEY is the django secret key. To generate a new one see: [Stackoverflow Link](https://stackoverflow.com/questions/41298963/is-there-a-function-for-generating-settings-secret-key-in-django)
 
@@ -91,7 +94,8 @@ The behavior of some of the views had to be modified to address functionalities 
     python manage.py migrate
     python manage.py runserver
     ```
-1. Congratulations =) !!! The App should be running in [localhost:8000](http://localhost:8000)
+      
+1. Congratulations =) !!! The App should be running in http://${HOST_PORT}:${TRUCKSIGNS_PORT}
 1. (Optional step) To create a super user run:
     ```bash
     python manage.py createsuperuser
@@ -99,6 +103,105 @@ The behavior of some of the views had to be modified to address functionalities 
 
 
 __NOTE:__ To create Truck vinyls with Truck logos in them, first create the __Category__ Truck Sign, and then the __Product__ (can have any name). This is to make sure the frontend retrieves the Truck vinyls for display in the Product Grid as it only fetches the products of the category Truck Sign.
+
+---
+
+## How to build the image:
+    ```bash
+    docker build -t ${YOUR_DB_NAME}:latest .
+    ```
+    This command uses your `Dockerfile` to:
+    - Start from a minimal Python base (Alpine or Slim).
+    - Install system libraries needed for Pillow, psycopg2, cryptography. 
+    - Install Python dependencies from `requirements.txt`  
+    - Copy application code and `.env`.
+    - Expose port defined by `APP_PORT`.
+    - Automatically run migrations, `collectstatic`, and create a superuser.
+
+> [!Note]
+> Thanks `ENTRYPOINT["./entrypoint.sh"]` will start automatically when the container is builded. If you want to change something there, then check out the `entrypoint.sh` .
+
+    If you want to start the container manually, then use this prompt:
+    ```bash
+    docker run -d \
+    --name ${YOUR_PROJECT_NAME} \
+    --network ${YOUR_NETWORK} \
+    -p ${HOST_PORT}:${APP_PORT} \
+    -e SECRET_KEY=${SECRET_KEY} \
+    -e DB_NAME=${DB_NAME} \
+    -e DB_USER=${DB_USER} \
+    -e DB_PASSWORD=${DB_PW} \
+    -e DB_HOST=${DB_HOST} \
+    -e DB_PORT=${DB_PORT} \
+    -e APP_PORT=${APP_PORT} \
+    truck-api:<feature-branch>
+    ```
+
+---
+
+## Usage
+
+1. Configuration
+
+    1. All sensitive settings live in:
+    ```bash
+    truck_signs_designs/settings/.env
+    ```
+
+    Key variables:
+    ```bash
+    # Django
+    SECRET_KEY=
+    DB_NAME=
+    DB_USER=
+    DB_PASSWORD=
+    DB_HOST=
+    DB_PORT=
+
+    # Stripe
+    STRIPE_PUBLISHABLE_KEY=
+    STRIPE_SECRET_KEY=
+
+    # Email (SMTP)
+    EMAIL_HOST_USER=
+    EMAIL_HOST_PASSWORD=
+    ```
+1. Docker Mode
+
+    1. Modify these values to point at your PostgreSQL instance, Stripe test account, and your SMTP provider.
+
+    If you wish to run both Postgres and Django via Docker, define in .env:
+    ```bash
+    DOCKER_DB_NAME=${YOUR_DB_NAME}
+    DOCKER_DB_USER=${YOUR_DB_USER}
+    DOCKER_DB_PASSWORD=${YOUR_DB_PW}
+    DOCKER_DB_HOST=${YOUR_DB_HOST}
+    DOCKER_DB_PORT=${YOUR_DB_PORT}
+
+    DOCKER_STRIPE_PUBLISHABLE_KEY=${PK_TEST_XXXX}
+    DOCKER_STRIPE_SECRET_KEY=${SK_TEST_XXXX}
+
+    DOCKER_EMAIL_HOST_USER=${YOU@EXAMPLE.COM}
+    DOCKER_EMAIL_HOST_PASSWORD=${SECRET-PW}
+    ````
+---
+
+## Installation
+
+1. Install [Python](https://www.python.org/downloads/)
+
+1. Clone & env (see [Quickstart](#quickstart))
+
+1. PostgreSQL
+    1. Download [PostgreSQL](https://www.postgresql.org/download/) (if not available)
+    1. Create user and database -> https://www.youtube.com/watch?v=oNJpktM65eY&ab_channel=Chin-Z%28ChintanShah%29
+
+1. Set your environment variables
+
+1. Migrate & run (see [Quickstart](#quickstart))
+
+> [!Note]
+> When creating the database and the user, make sure to enter them in the `.env`.
 
 ---
 
