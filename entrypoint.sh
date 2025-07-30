@@ -17,7 +17,18 @@ python manage.py collectstatic --noinput
 # Superuser anlegen, falls noch nicht vorhanden
 python manage.py createsuperuser --noinput \
     --username "$DJANGO_SUPERUSER_USERNAME" \
-    --email "$DJANGO_SUPERUSER_EMAIL" || true
+    --email    "$DJANGO_SUPERUSER_EMAIL" || true
+
+# Passwort setzen (oder neu setzen), damit admin/admin wirklich funktioniert
+python manage.py shell <<EOF
+from django.contrib.auth import get_user_model
+User = get_user_model()
+u, created = User.objects.get_or_create(username="$DJANGO_SUPERUSER_USERNAME", defaults={
+    "email": "$DJANGO_SUPERUSER_EMAIL",
+})
+u.set_password("$DJANGO_SUPERUSER_PASSWORD")
+u.save()
+EOF
 
 echo "Setup complete – starting Gunicorn WSGI server"
 exec gunicorn truck_signs_designs.wsgi:application \
