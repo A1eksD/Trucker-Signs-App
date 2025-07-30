@@ -1,9 +1,6 @@
 #!/usr/bin/env sh
 set -e
 
-# damit Django die Docker‑Konfiguration (test_docker.py) verwendet
-export DJANGO_SETTINGS_MODULE=truck_signs_designs.settings.test_docker
-
 echo "Waiting for database at $DOCKER_DB_HOST:$DOCKER_DB_PORT …"
 while ! nc -z "$DOCKER_DB_HOST" "$DOCKER_DB_PORT"; do
   sleep 0.1
@@ -12,7 +9,6 @@ done
 echo "Database is up – running migrations and static collect"
 
 # Migrationen anwenden
-python manage.py makemigrations --noinput
 python manage.py migrate --noinput
 
 # Static files sammeln
