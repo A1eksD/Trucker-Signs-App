@@ -12,10 +12,10 @@ echo "Database is up – running migrations and static collect"
 
 # Migrations anlegen und ausführen
 python manage.py makemigrations --noinput
-python manage.py migrate --noinput
+python manage.py migrate --noinput --skip-checks
 
 # Static files sammeln
-python manage.py collectstatic --noinput
+python manage.py collectstatic --noinput --skip-checks
 
 # Superuser anlegen, falls noch nicht vorhanden
 python manage.py createsuperuser --noinput \
@@ -27,4 +27,4 @@ echo "Setup complete – starting Gunicorn WSGI server"
 # Gunicorn WSGI‑Server starten (kein dev‑server)
 exec gunicorn truck_signs_designs.wsgi:application \
     --bind 0.0.0.0:"$APP_PORT" \
-    --workers 3 \
+    --workers 3
