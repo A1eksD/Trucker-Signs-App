@@ -1,7 +1,7 @@
 # Dockerfile
 
 # 1. Base Image
-FROM python:3.9-slim
+FROM python:3.11-slim
 
 # 2. System‑Dependencies installieren
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -15,13 +15,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # 3. Environment‑Variablen (Runtime)
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    DOCKER_DB_HOST=db \
-    DOCKER_DB_PORT=5432 \
-    APP_PORT=8020 \
-    DJANGO_SUPERUSER_USERNAME=admin \
-    DJANGO_SUPERUSER_PASSWORD=admin \
-    DJANGO_SUPERUSER_EMAIL=admin@admin.com
+    PYTHONUNBUFFERED=1
 
 # 4. Arbeitsverzeichnis setzen
 WORKDIR /app
