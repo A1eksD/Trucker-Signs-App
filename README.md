@@ -13,8 +13,7 @@
 * [Description](#description)  
 * [Quickstart](#quickstart)  
 * [How to build the image](#how-to-build-the-image)  
-* [Usage](#usage)  
-* [Installation](#installation) 
+* [Usage](#usage)
 * [Screenshots](#screenshots)  
 * [Useful Links](#useful-links)
 
@@ -50,14 +49,14 @@ The behavior of some of the views had to be modified to address functionalities 
 
 1. Clone the repo:
     ```bash
-    git clone https://github.com/A1eksD/Trucker-Signs-App
+    git clone git@github.com:A1eksD/Trucker-Signs-App.git
     ```
 1. Configure a virtual env and set up the database. See [Link for configuring Virtual Environment](https://docs.python-guide.org/dev/virtualenvs/) and [Link for Database setup](https://www.digitalocean.com/community/tutorials/how-to-set-up-django-with-postgres-nginx-and-gunicorn-on-ubuntu-16-04).
 1. Configure the environment variables.
     1. Copy the content of the example env file that is inside the truck_signs_designs folder into a .env file:
         ```bash
         cd truck_signs_designs/settings
-        cp .env .env
+        cp simple_env_config.env .env
         ```
     1. The new .env file should contain all the environment variables necessary to run all the django app in all the environments. However, the only needed variables for the development environment to run are the following:
         ```bash
@@ -72,13 +71,33 @@ The behavior of some of the views had to be modified to address functionalities 
         EMAIL_HOST_USER
         EMAIL_HOST_PASSWORD
         ```
+
+    | Variable                | Description                                                                                      | Example/Default                    |
+    |:------------------------|:------------------------------------------------------------------------------------------------:|-----------------------------------:|
+    | SECRET_KEY              | Django secret for cryptography and security. **Must be long & random.**                         | `django-insecure-...`¹              |
+    | DB_NAME                 | Name of the PostgreSQL database                                                                  | `truckdb`                           |
+    | DB_USER                 | Username for the database                                                                        | `truckuser`                         |
+    | DB_PASSWORD             | Password for the database                                                                        | `StrongPassword123!`                |
+    | DB_HOST                 | Hostname/IP of the database (usually the container name in Docker network)                       | `my-postgres`                       |
+    | DB_PORT                 | Database port (default for Postgres: 5432)                                                       | `5432`                              |
+    | STRIPE_PUBLISHABLE_KEY  | Public Stripe API key for payments                                                               | (from Stripe)                       |
+    | STRIPE_SECRET_KEY       | Secret Stripe API key for payments (**do not expose publicly!**)                                 | (from Stripe)                       |
+    | EMAIL_HOST_USER         | SMTP username (usually your email address)                                                       | `youraddress@gmail.com`             |
+    | EMAIL_HOST_PASSWORD     | SMTP password or app password                                                                    | (Google app password, etc.)         |
+
+    ¹ SECRET_KEY Example:
+    Generate a secure key with:
+    ```bash
+    python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'
+    ```
+
     1. For the database, the default configurations should be:
         ```bash
-        DB_NAME=${TRUCKSIGNS_DB}
-        DB_USER=${TRUCKSIGNS_USER}
-        DB_PASSWORD=${TRUCKSIGNS_PW}
-        DB_HOST=${TRUCKSIGNS_HOST}
-        DB_PORT=${TRUCKSIGNS_PORT}
+        DB_NAME=${TRUCKSIGNS_DB_NAME}
+        DB_USER=${TRUCKSIGNS_DB_USER}
+        DB_PASSWORD=${TRUCKSIGNS_DB_PW}
+        DB_HOST=${TRUCKSIGNS_DB_HOST}
+        DB_PORT=${TRUCKSIGNS_DB_PORT}
         ```
     1. The SECRET_KEY is the django secret key. To generate a new one see: [Stackoverflow Link](https://stackoverflow.com/questions/41298963/is-there-a-function-for-generating-settings-secret-key-in-django)
 
@@ -107,35 +126,50 @@ __NOTE:__ To create Truck vinyls with Truck logos in them, first create the __Ca
 ---
 
 ## How to build the image:
+
+    Docker build:
     ```bash
-    docker build -t ${YOUR_DB_NAME}:latest .
+    docker build -t ${YOUR_PROJECT_NAME}:latest .
     ```
     This command uses your `Dockerfile` to:
-    - Start from a minimal Python base (Alpine or Slim).
+    - Build a minimal Python base (Alpine or Slim).
     - Install system libraries needed for Pillow, psycopg2, cryptography. 
-    - Install Python dependencies from `requirements.txt`  
-    - Copy application code and `.env`.
+    - Install Python dependencies from `requirements.txt`
     - Expose port defined by `APP_PORT`.
-    - Automatically run migrations, `collectstatic`, and create a superuser.
 
-> [!Note]
-> Thanks `ENTRYPOINT["./entrypoint.sh"]` will start automatically when the container is builded. If you want to change something there, then check out the `entrypoint.sh` .
+    Create volume for storage data:
+    bash```
+    docker volume create ${YOUR_VOLUME_NAME}
+    ```
 
-    If you want to start the container manually, then use this prompt:
+    Create a network:
+    bash```
+    docker network create ${YOUR_NETWORK}
+    ```
+
+    Start the postgres docker container:
+    bash```
+    docker run -d \
+    --name ${YOUR_DB_CONTAINER_NAME} \
+    --network ${YOUR_NETWORK} \
+    -v ${YOUR_VOLUME_NAME}:/var/lib/postgresql/data \
+    --env-file simple_env_config.env \
+    -p ${DB_PORT}:{CONTAINER_PORT} \
+    postgres:latest
+    ```
+
+    Start docker container:
     ```bash
     docker run -d \
     --name ${YOUR_PROJECT_NAME} \
     --network ${YOUR_NETWORK} \
+    --env-file simple_env_config.env 
     -p ${HOST_PORT}:${APP_PORT} \
-    -e SECRET_KEY=${SECRET_KEY} \
-    -e DB_NAME=${DB_NAME} \
-    -e DB_USER=${DB_USER} \
-    -e DB_PASSWORD=${DB_PW} \
-    -e DB_HOST=${DB_HOST} \
-    -e DB_PORT=${DB_PORT} \
-    -e APP_PORT=${APP_PORT} \
-    truck-api:<feature-branch>
+    truck-api:latest
     ```
+
+> [!Note]
+> `ENTRYPOINT["./entrypoint.sh"]` will start automatically when the container is started. If you want to change something there, then check out the `entrypoint.sh` .
 
 ---
 
@@ -145,7 +179,7 @@ __NOTE:__ To create Truck vinyls with Truck logos in them, first create the __Ca
 
     1. All sensitive settings live in:
     ```bash
-    truck_signs_designs/settings/.env
+    truck_signs_designs/settings/simple_env_config.env
     ```
 
     Key variables:
@@ -166,11 +200,12 @@ __NOTE:__ To create Truck vinyls with Truck logos in them, first create the __Ca
     EMAIL_HOST_USER=
     EMAIL_HOST_PASSWORD=
     ```
+
 1. Docker Mode
 
     1. Modify these values to point at your PostgreSQL instance, Stripe test account, and your SMTP provider.
 
-    If you wish to run both Postgres and Django via Docker, define in .env:
+    If you wish to run both Postgres and Django via Docker, define in simple_env_config.env:
     ```bash
     DOCKER_DB_NAME=${YOUR_DB_NAME}
     DOCKER_DB_USER=${YOUR_DB_USER}
@@ -184,25 +219,8 @@ __NOTE:__ To create Truck vinyls with Truck logos in them, first create the __Ca
     DOCKER_EMAIL_HOST_USER=${YOU@EXAMPLE.COM}
     DOCKER_EMAIL_HOST_PASSWORD=${SECRET-PW}
     ````
----
-
-## Installation
-
-1. Install [Python](https://www.python.org/downloads/)
-
-1. Clone & env (see [Quickstart](#quickstart))
-
-1. PostgreSQL
-    1. Download [PostgreSQL](https://www.postgresql.org/download/) (if not available)
-    1. Create user and database -> https://www.youtube.com/watch?v=oNJpktM65eY&ab_channel=Chin-Z%28ChintanShah%29
-
-1. Set your environment variables
-
-1. Migrate & run (see [Quickstart](#quickstart))
-
 > [!Note]
-> When creating the database and the user, make sure to enter them in the `.env`.
-
+> When creating the database and the user, make sure to enter them in the `simple_env_config.env`.
 ---
 
 <a name="screenshots"></a>

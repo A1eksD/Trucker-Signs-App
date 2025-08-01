@@ -3,13 +3,7 @@
 # 1. Base Image
 FROM python:3.9-slim
 
-# 2. Build‑Time Defaults
-ARG APP_PORT=8020
-ARG DJANGO_SUPERUSER_USERNAME=admin
-ARG DJANGO_SUPERUSER_PASSWORD=admin
-ARG DJANGO_SUPERUSER_EMAIL=admin@admin.com
-
-# 3. System‑Dependencies installieren
+# 2. System‑Dependencies installieren
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
@@ -19,32 +13,32 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     netcat-openbsd \
   && rm -rf /var/lib/apt/lists/*
 
-# 4. Environment‑Variablen (Runtime)
+# 3. Environment‑Variablen (Runtime)
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     DOCKER_DB_HOST=db \
     DOCKER_DB_PORT=5432 \
-    APP_PORT=${APP_PORT} \
-    DJANGO_SUPERUSER_USERNAME=${DJANGO_SUPERUSER_USERNAME} \
-    DJANGO_SUPERUSER_PASSWORD=${DJANGO_SUPERUSER_PASSWORD} \
-    DJANGO_SUPERUSER_EMAIL=${DJANGO_SUPERUSER_EMAIL}
+    APP_PORT=8020 \
+    DJANGO_SUPERUSER_USERNAME=admin \
+    DJANGO_SUPERUSER_PASSWORD=admin \
+    DJANGO_SUPERUSER_EMAIL=admin@admin.com
 
-# 5. Arbeitsverzeichnis setzen
+# 4. Arbeitsverzeichnis setzen
 WORKDIR /app
 
-# 6. Python‑Dependencies installieren
+# 5. Python‑Dependencies installieren
 COPY requirements.txt . 
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 7. Applikationscode kopieren
+# 6. Entrypoint‑Skript und Applikationscode kopieren
+COPY entrypoint.sh /app/entrypoint.sh
 COPY . .
 
-# 8. Entrypoint‑Skript kopieren und ausführbar machen
-COPY entrypoint.sh /app/entrypoint.sh
+# 7. Entrypoint‑Skript ausführbar machen
 RUN chmod +x /app/entrypoint.sh
 
-# 9. Port freigeben
+# 8. Port freigeben
 EXPOSE ${APP_PORT}
 
-# 10. Entrypoint definieren
+# 9. Entrypoint definieren
 ENTRYPOINT ["./entrypoint.sh"]
