@@ -10,10 +10,12 @@
 </div>
 
 ## Table of Contents
-* [Description](#description)
-* [Installation](#installation)
-* [Screenshots of the Django Backend Admin Panel](#screenshots)
-* [Useful Links](#useful_links)
+* [Description](#description)  
+* [Quickstart](#quickstart)  
+* [How to build the image](#how-to-build-the-image)  
+* [Usage](#usage)
+* [Screenshots](#screenshots)  
+* [Useful Links](#useful-links)
 
 
 
@@ -43,11 +45,11 @@ Most of the views are CBV imported from _rest_framework.generics_, and they allo
 
 The behavior of some of the views had to be modified to address functionalities such as creation of order and payment, as in this case, for example, both functionalities are implemented in the same view, and so a _GenericAPIView_ was the view from which it inherits. Another example of this is the _UploadCustomerImage_ View that takes the vinyl template uploaded by the clients and creates a new product based on it.
 
-## Installation
+## Quickstart
 
 1. Clone the repo:
     ```bash
-    git clone <INSERT URL>
+    git clone git@github.com:A1eksD/Trucker-Signs-App.git
     ```
 1. Configure a virtual env and set up the database. See [Link for configuring Virtual Environment](https://docs.python-guide.org/dev/virtualenvs/) and [Link for Database setup](https://www.digitalocean.com/community/tutorials/how-to-set-up-django-with-postgres-nginx-and-gunicorn-on-ubuntu-16-04).
 1. Configure the environment variables.
@@ -69,13 +71,33 @@ The behavior of some of the views had to be modified to address functionalities 
         EMAIL_HOST_USER
         EMAIL_HOST_PASSWORD
         ```
+
+    | Variable                | Description                                                                                      | Example/Default                    |
+    |:------------------------|:------------------------------------------------------------------------------------------------:|-----------------------------------:|
+    | SECRET_KEY              | Django secret for cryptography and security. **Must be long & random.**                         | `django-insecure-...`¹              |
+    | DB_NAME                 | Name of the PostgreSQL database                                                                  | `truckdb`                           |
+    | DB_USER                 | Username for the database                                                                        | `truckuser`                         |
+    | DB_PASSWORD             | Password for the database                                                                        | `StrongPassword123!`                |
+    | DB_HOST                 | Hostname/IP of the database (usually the container name in Docker network)                       | `my-postgres`                       |
+    | DB_PORT                 | Database port (default for Postgres: 5432)                                                       | `5432`                              |
+    | STRIPE_PUBLISHABLE_KEY  | Public Stripe API key for payments                                                               | (from Stripe)                       |
+    | STRIPE_SECRET_KEY       | Secret Stripe API key for payments (**do not expose publicly!**)                                 | (from Stripe)                       |
+    | EMAIL_HOST_USER         | SMTP username (usually your email address)                                                       | `youraddress@gmail.com`             |
+    | EMAIL_HOST_PASSWORD     | SMTP password or app password                                                                    | (Google app password, etc.)         |
+
+    ¹ SECRET_KEY Example:
+    Generate a secure key with:
+    ```bash
+    python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'
+    ```
+
     1. For the database, the default configurations should be:
         ```bash
-        DB_NAME=trucksigns_db
-        DB_USER=trucksigns_user
-        DB_PASSWORD=supertrucksignsuser!
-        DB_HOST=localhost
-        DB_PORT=5432
+        DB_NAME=${TRUCKSIGNS_DB_NAME}
+        DB_USER=${TRUCKSIGNS_DB_USER}
+        DB_PASSWORD=${TRUCKSIGNS_DB_PW}
+        DB_HOST=${TRUCKSIGNS_DB_HOST}
+        DB_PORT=${TRUCKSIGNS_DB_PORT}
         ```
     1. The SECRET_KEY is the django secret key. To generate a new one see: [Stackoverflow Link](https://stackoverflow.com/questions/41298963/is-there-a-function-for-generating-settings-secret-key-in-django)
 
@@ -91,7 +113,8 @@ The behavior of some of the views had to be modified to address functionalities 
     python manage.py migrate
     python manage.py runserver
     ```
-1. Congratulations =) !!! The App should be running in [localhost:8000](http://localhost:8000)
+      
+1. Congratulations =) !!! The App should be running in http://${HOST_PORT}:${TRUCKSIGNS_PORT}
 1. (Optional step) To create a super user run:
     ```bash
     python manage.py createsuperuser
@@ -100,6 +123,104 @@ The behavior of some of the views had to be modified to address functionalities 
 
 __NOTE:__ To create Truck vinyls with Truck logos in them, first create the __Category__ Truck Sign, and then the __Product__ (can have any name). This is to make sure the frontend retrieves the Truck vinyls for display in the Product Grid as it only fetches the products of the category Truck Sign.
 
+---
+
+## How to build the image:
+
+    Docker build:
+    ```bash
+    docker build -t ${YOUR_PROJECT_NAME}:latest .
+    ```
+    This command uses your `Dockerfile` to:
+    - Build a minimal Python base (Alpine or Slim).
+    - Install system libraries needed for Pillow, psycopg2, cryptography. 
+    - Install Python dependencies from `requirements.txt`
+    - Expose port defined by `APP_PORT`.
+
+    Create volume for storage data:
+    bash```
+    docker volume create ${YOUR_VOLUME_NAME}
+    ```
+
+    Create a network:
+    bash```
+    docker network create ${YOUR_NETWORK}
+    ```
+
+    Start the postgres docker container:
+    bash```
+    docker run -d \
+    --name ${YOUR_DB_CONTAINER_NAME} \
+    --network ${YOUR_NETWORK} \
+    -v ${YOUR_VOLUME_NAME}:/var/lib/postgresql/data \
+    --env-file simple_env_config.env \
+    -p ${DB_PORT}:{CONTAINER_PORT} \
+    postgres:latest
+    ```
+
+    Start docker container:
+    ```bash
+    docker run -d \
+    --name ${YOUR_PROJECT_NAME} \
+    --network ${YOUR_NETWORK} \
+    --env-file simple_env_config.env 
+    -p ${HOST_PORT}:${APP_PORT} \
+    truck-api:latest
+    ```
+
+> [!Note]
+> `ENTRYPOINT["./entrypoint.sh"]` will start automatically when the container is started. If you want to change something there, then check out the `entrypoint.sh` .
+
+---
+
+## Usage
+
+1. Configuration
+
+    1. All sensitive settings live in:
+    ```bash
+    truck_signs_designs/settings/simple_env_config.env
+    ```
+
+    Key variables:
+    ```bash
+    # Django
+    SECRET_KEY=
+    DB_NAME=
+    DB_USER=
+    DB_PASSWORD=
+    DB_HOST=
+    DB_PORT=
+
+    # Stripe
+    STRIPE_PUBLISHABLE_KEY=
+    STRIPE_SECRET_KEY=
+
+    # Email (SMTP)
+    EMAIL_HOST_USER=
+    EMAIL_HOST_PASSWORD=
+    ```
+
+1. Docker Mode
+
+    1. Modify these values to point at your PostgreSQL instance, Stripe test account, and your SMTP provider.
+
+    If you wish to run both Postgres and Django via Docker, define in simple_env_config.env:
+    ```bash
+    DOCKER_DB_NAME=${YOUR_DB_NAME}
+    DOCKER_DB_USER=${YOUR_DB_USER}
+    DOCKER_DB_PASSWORD=${YOUR_DB_PW}
+    DOCKER_DB_HOST=${YOUR_DB_HOST}
+    DOCKER_DB_PORT=${YOUR_DB_PORT}
+
+    DOCKER_STRIPE_PUBLISHABLE_KEY=${PK_TEST_XXXX}
+    DOCKER_STRIPE_SECRET_KEY=${SK_TEST_XXXX}
+
+    DOCKER_EMAIL_HOST_USER=${YOU@EXAMPLE.COM}
+    DOCKER_EMAIL_HOST_PASSWORD=${SECRET-PW}
+    ````
+> [!Note]
+> When creating the database and the user, make sure to enter them in the `simple_env_config.env`.
 ---
 
 <a name="screenshots"></a>
